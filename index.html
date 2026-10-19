@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shopowo.pl — sklep demonstracyjny</title>
+<meta name="description" content="Shopowo.pl — demonstracyjny sklep internetowy: przejrzysty katalog, wyszukiwarka i koszyk działający w przeglądarce.">
+<meta name="theme-color" content="#0f766e">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Shopowo.pl — sklep demonstracyjny">
+<meta property="og:description" content="Nowoczesny sklep demonstracyjny z koszykiem w przeglądarce.">
+<meta property="og:url" content="https://shopowo.pl/">
+<meta property="og:locale" content="pl_PL">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f766e'/%3E%3Ctext x='32' y='45' font-size='38' font-family='Arial' font-weight='700' text-anchor='middle' fill='%23fff'%3ES%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"Shopowo.pl","url":"https://shopowo.pl/"}</script>
+</head>
+<body>
+<div class="demo">Wersja demonstracyjna — produkty są przykładowe, zamówienia nie są przyjmowane.</div>
+<header>
+ <div class="hd">
+  <a class="logo" href="#/" aria-label="Shopowo.pl — strona główna">Shop<b>owo</b></a>
+  <form class="sr" role="search" id="sf"><input id="q" type="search" placeholder="Szukaj produktów…" aria-label="Szukaj produktów"><button aria-label="Szukaj">🔍</button></form>
+  <a class="cartb" href="#/koszyk" aria-label="Koszyk">🛒<span id="cnt">0</span></a>
+  <button class="burger" id="bg" aria-label="Menu" aria-expanded="false">☰</button>
+  <nav id="nav" aria-label="Kategorie"></nav>
+ </div>
+</header>
+<main id="main" tabindex="-1"></main>
+<footer>
+ <div class="w ft">
+  <div><a class="logo" href="#/">Shop<b>owo</b></a><p>Demonstracyjny sklep internetowy. Nie prowadzimy jeszcze sprzedaży.</p></div>
+  <div><h4>Informacje</h4><a href="#/info/kontakt">Kontakt</a><a href="#/info/regulamin">Regulamin</a><a href="#/info/prywatnosc">Prywatność</a><a href="#/info/zwroty">Zwroty</a></div>
+  <div><h4>Sklep</h4><a href="#/sklep">Wszystkie produkty</a><a href="#/koszyk">Koszyk</a></div>
+ </div>
+ <p class="cp">© 2026 Shopowo.pl — wersja demonstracyjna</p>
+</footer>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="products.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
