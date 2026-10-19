@@ -2,6 +2,8 @@
 // PRZYSZŁE PODŁĄCZENIE: ustaw checkoutUrl na adres własnego, bezpiecznego checkoutu
 // (np. strona operatora płatności). NIE wpisuj tu kluczy API ani haseł.
 const CONFIG={checkoutUrl:null};
+// Adres Twojego Workera Cloudflare (pośrednik do GAPLI). Klucz API jest tylko w Cloudflare.
+const API='https://shopowo-api.paweloxbieniek1.workers.dev';
 const $=s=>document.querySelector(s);
 const zl=n=>n.toFixed(2).replace('.',',')+' zł';
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -9,6 +11,9 @@ const CATS=['Dom i ogród','Elektronika i gadżety','Akcesoria','Uroda','Produkt
 const ICON={'Dom i ogród':'🏡','Elektronika i gadżety':'🔌','Akcesoria':'👜','Uroda':'💄','Produkty codziennego użytku':'🧺'};
 let cart={};try{cart=JSON.parse(localStorage.getItem('shopowo-cart')||'{}')}catch(e){}
 const P=id=>PRODUCTS.find(p=>p.id===id);
+let known={};try{known=JSON.parse(localStorage.getItem('shopowo-known')||'{}')}catch(e){}
+const addLive=r=>{let p=PRODUCTS.find(x=>x.id===r.sku);if(!p){p={id:r.sku,name:r.name,cat:'Katalog hurtowni',price:r.price,emoji:'📦',hue:(r.sku.length*47)%360,tags:[],desc:'Pozycja z katalogu dostawcy. W wersji demonstracyjnej brak zdjęcia i opisu, a dostępność może się zmienić.',live:1,stock:r.stock};PRODUCTS.push(p)}return p};
+Object.values(known).forEach(addLive);
 const count=()=>Object.values(cart).reduce((a,b)=>a+b,0);
 function save(){try{localStorage.setItem('shopowo-cart',JSON.stringify(cart))}catch(e){}$('#cnt').textContent=count()}
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),3500)}
@@ -31,13 +36,13 @@ ${sec('Popularne produkty','popular')}${sec('Promocje','promo')}${sec('Nowości'
 <details><summary>Co się dzieje z koszykiem?</summary><p>Jest zapisywany wyłącznie w Twojej przeglądarce i nie trafia na żaden serwer.</p></details>
 <details><summary>Kiedy ruszy prawdziwa sprzedaż?</summary><p>Dopiero po podłączeniu systemu zamówień, płatności i dostawcy oraz uzupełnieniu dokumentów prawnych.</p></details></section>`}
 function shop(q){const cat=q.get('cat')||'',s=(q.get('q')||'').toLowerCase().trim(),so=q.get('sort')||'';
- let l=PRODUCTS.filter(p=>(!cat||p.cat===cat)&&(!s||(p.name+' '+p.desc+' '+p.cat).toLowerCase().includes(s))&&(so!=='promo'||p.old));
+ let l=PRODUCTS.filter(p=>!p.live&&(!cat||p.cat===cat)&&(!s||(p.name+' '+p.desc+' '+p.cat).toLowerCase().includes(s))&&(so!=='promo'||p.old));
  if(so==='tan')l.sort((a,b)=>a.price-b.price);if(so==='drog')l.sort((a,b)=>b.price-a.price);if(so==='az')l.sort((a,b)=>a.name.localeCompare(b.name,'pl'));
  return `<div class="w"><h1 style="margin-top:20px">${cat?esc(cat):'Wszystkie produkty'}</h1>${s?`<p>Wyniki dla: <b>${esc(s)}</b></p>`:''}
  <div class="bar"><select data-f="cat" aria-label="Kategoria"><option value="">Wszystkie kategorie</option>${CATS.map(c=>`<option ${c===cat?'selected':''}>${c}</option>`).join('')}</select>
  <select data-f="sort" aria-label="Sortowanie"><option value="">Domyślnie</option>${[['tan','Cena rosnąco'],['drog','Cena malejąco'],['az','Nazwa A–Z'],['promo','Tylko promocje']].map(o=>`<option value="${o[0]}" ${o[0]===so?'selected':''}>${o[1]}</option>`).join('')}</select></div>
  ${l.length?`<div class="grid">${l.map(card).join('')}</div>`:'<div class="empty"><h2>Brak wyników</h2><p>Spróbuj innej frazy lub zmień filtry.</p><a class="btn" href="#/sklep">Wyczyść filtry</a></div>'}</div>`}
-function prod(p){return `<p class="crumb"><a href="#/">Start</a> / <a href="#/sklep?cat=${encodeURIComponent(p.cat)}">${esc(p.cat)}</a></p><div class="w pd"><img src="${img(p)}" alt="${esc(p.name)} (grafika poglądowa)" width="400" height="400"><div><h1>${esc(p.name)}</h1><div class="price">${zl(p.price)}${p.old?` <s style="font-size:16px;color:var(--mut);font-weight:400">${zl(p.old)}</s>`:''}</div><p>${esc(p.desc)}</p>
+function prod(p){return `<p class="crumb"><a href="#/">Start</a> / <a href="${p.live?'#/katalog':'#/sklep?cat='+encodeURIComponent(p.cat)}">${esc(p.cat)}</a></p><div class="w pd"><img src="${img(p)}" alt="${esc(p.name)} (grafika poglądowa)" width="400" height="400"><div><h1>${esc(p.name)}</h1><div class="price">${zl(p.price)}${p.old?` <s style="font-size:16px;color:var(--mut);font-weight:400">${zl(p.old)}</s>`:''}</div><p>${esc(p.desc)}</p>
  <p><span class="qty"><button data-q="-1" aria-label="Mniej">−</button><span id="pq">1</span><button data-q="1" aria-label="Więcej">+</button></span></p><button class="btn" data-addq="${p.id}">Dodaj do koszyka</button>
  <div class="note">Produkt demonstracyjny — nie jest dostępny w sprzedaży. Grafika ma charakter poglądowy.</div></div></div>`}
 function cartV(){const ids=Object.keys(cart).filter(id=>P(id));if(!ids.length)return `<div class="w empty"><h1>Koszyk jest pusty</h1><p>Dodaj produkty, aby zobaczyć tutaj podsumowanie.</p><a class="btn" href="#/sklep">Przejdź do sklepu</a></div>`;
@@ -45,17 +50,23 @@ function cartV(){const ids=Object.keys(cart).filter(id=>P(id));if(!ids.length)re
  return `<div class="w txt" style="max-width:760px"><h1>Koszyk</h1><div class="note">Koszyk demonstracyjny. Zamówienia nie są realizowane, a płatności nie są obsługiwane.</div>
  ${ids.map(id=>{const p=P(id);return `<div class="row"><img src="${img(p)}" alt="" width="72" height="72"><div><a href="#/produkt/${id}"><b>${esc(p.name)}</b></a><div class="x"><span class="qty"><button data-c="${id}" data-d="-1" aria-label="Mniej">−</button><span>${cart[id]}</span><button data-c="${id}" data-d="1" aria-label="Więcej">+</button></span><b>${zl(p.price*cart[id])}</b><button class="link" data-del="${id}">Usuń</button></div></div></div>`}).join('')}
  <div class="tot"><span>Razem</span><span>${zl(tot)}</span></div><p style="color:var(--mut);font-size:14px">Koszty dostawy zostaną określone po podłączeniu dostawcy.</p><button class="btn" data-checkout style="width:100%">Przejdź do zamówienia</button></div>`}
+function katV(s){return `<div class="w"><h1 style="margin-top:20px">Katalog hurtowni</h1><div class="note">Pozycje pobierane na żywo od dostawcy. To wersja demonstracyjna: brak zdjęć, ceny i dostępność mogą się zmieniać, a zamówienia nie są przyjmowane.</div><form class="bar" id="kf" role="search"><input id="kq" type="search" value="${esc(s)}" placeholder="Szukaj w katalogu…" aria-label="Szukaj w katalogu" style="flex:1;min-width:0;padding:10px 14px;border:1px solid var(--line);border-radius:10px;font:inherit"><button class="btn sm">Szukaj</button></form><div id="kg" class="grid"></div><p id="ks" style="color:var(--mut)"></p><p><button class="btn o" id="km" hidden>Pokaż więcej</button></p></div>`}
+async function kload(s,off){const g=$('#kg'),st=$('#ks'),m=$('#km');if(!g)return;if(!off)g.innerHTML='';m.hidden=true;st.textContent='Ładowanie…';
+ try{const r=await fetch(`${API}/products?limit=24&offset=${off}&search=${encodeURIComponent(s)}`);if(!r.ok)throw 0;const d=await r.json();const ps=d.products.map(addLive);
+  g.insertAdjacentHTML('beforeend',ps.map(card).join(''));st.textContent=!off&&!ps.length?'Brak wyników.':'';m.hidden=!d.has_more;m.onclick=()=>kload(s,off+24)}
+ catch(e){st.textContent='Nie udało się pobrać katalogu. Spróbuj ponownie za chwilę.'}}
 function route(){const [path,qs]=(location.hash.slice(1)||'/').split('?'),q=new URLSearchParams(qs||''),s=path.split('/').filter(Boolean);
  let t='Shopowo.pl — sklep demonstracyjny',h;
  if(!s.length)h=home();
  else if(s[0]==='sklep'){h=shop(q);t=(q.get('cat')||'Produkty')+' — Shopowo.pl'}
  else if(s[0]==='produkt'&&P(s[1])){h=prod(P(s[1]));t=P(s[1]).name+' — Shopowo.pl'}
+ else if(s[0]==='katalog'){h=katV(q.get('q')||'');t='Katalog hurtowni — Shopowo.pl'}
  else if(s[0]==='koszyk'){h=cartV();t='Koszyk — Shopowo.pl'}
  else if(s[0]==='info'&&INFO[s[1]]){h=`<div class="txt w"><h1>${INFO[s[1]][0]}</h1><p>${INFO[s[1]][1]}</p><div class="note">Strona robocza — wersja demonstracyjna.</div></div>`;t=INFO[s[1]][0]+' — Shopowo.pl'}
  else{h='<div class="w empty"><h1>Nie znaleziono strony</h1><p>Ta strona nie istnieje lub została przeniesiona.</p><a class="btn" href="#/">Wróć na start</a></div>';t='Nie znaleziono — Shopowo.pl'}
- $('#main').innerHTML=h;document.title=t;scrollTo(0,0);$('#nav').classList.remove('open');$('#bg').setAttribute('aria-expanded','false');
+ $('#main').innerHTML=h;document.title=t;scrollTo(0,0);if(s[0]==='katalog')kload(q.get('q')||'',0);$('#nav').classList.remove('open');$('#bg').setAttribute('aria-expanded','false');
  document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on',q.get('cat')===decodeURIComponent((a.href.split('cat=')[1]||''))))}
-const add=(id,n=1)=>{cart[id]=(cart[id]||0)+n;save();toast('Dodano do koszyka: '+P(id).name)};
+const add=(id,n=1)=>{const p=P(id);cart[id]=(cart[id]||0)+n;if(p.live){known[id]={sku:id,name:p.name,price:p.price,stock:p.stock};try{localStorage.setItem('shopowo-known',JSON.stringify(known))}catch(e){}}save();toast('Dodano do koszyka: '+p.name)};
 document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const d=b.dataset;
  if(d.add)add(d.add);
  else if(d.addq)add(d.addq,+$('#pq').textContent);
@@ -66,5 +77,6 @@ document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)r
  else if(b.id==='bg'){const o=$('#nav').classList.toggle('open');b.setAttribute('aria-expanded',o)}});
 document.addEventListener('change',e=>{const f=e.target.dataset.f;if(!f)return;const q=new URLSearchParams((location.hash.split('?')[1])||'');e.target.value?q.set(f,e.target.value):q.delete(f);location.hash='#/sklep?'+q})
 $('#sf').addEventListener('submit',e=>{e.preventDefault();const v=$('#q').value.trim();location.hash='#/sklep'+(v?'?q='+encodeURIComponent(v):'')});
-$('#nav').innerHTML=CATS.map(c=>`<a href="#/sklep?cat=${encodeURIComponent(c)}">${c}</a>`).join('');
+$('#nav').innerHTML=CATS.map(c=>`<a href="#/sklep?cat=${encodeURIComponent(c)}">${c}</a>`).join('')+'<a href="#/katalog">Katalog hurtowni</a>';
+document.addEventListener('submit',e=>{if(e.target.id==='kf'){e.preventDefault();location.hash='#/katalog?q='+encodeURIComponent($('#kq').value.trim())}});
 addEventListener('hashchange',route);save();route();
